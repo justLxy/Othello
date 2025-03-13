@@ -281,6 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Update board with flip animations
     function updateBoardWithAnimation(newPieceRow, newPieceCol, flippedPieces, player) {
+        updateValidMoves();
         // First update the new piece
         const newPieceCell = gameBoard.querySelector(`.cell[data-row="${newPieceRow}"][data-col="${newPieceCol}"]`);
         newPieceCell.innerHTML = ''; // Clear any existing content
