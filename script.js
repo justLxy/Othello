@@ -145,6 +145,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // If AI goes first
         if (currentPlayer === aiColor) {
             makeAIMove();
+        } else {
+            // Make sure to show valid moves for player
+            updateBoardUI();
         }
     }
 
@@ -168,8 +171,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Highlight valid moves for the current player
-            if (currentPlayer === playerColor && isValidMove(row, col, board, currentPlayer)) {
-                cell.classList.add('valid-move');
+            if (currentPlayer === playerColor) {
+                if (isValidMove(row, col, board, currentPlayer)) {
+                    cell.classList.add('valid-move');
+                }
             }
         });
     }
@@ -232,15 +237,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Check if the move is valid
         if (isValidMove(row, col, board, currentPlayer)) {
-            makeMove(row, col);
+            // Make the move and get flipped pieces
+            const flippedPieces = makeMove(row, col, currentPlayer);
 
-            // Clear any hint if shown
+            // Update the board with animations
+            updateBoardWithAnimation(row, col, flippedPieces, currentPlayer);
+
+            // Clear any hint
             if (hintShown) {
                 hintShown = false;
-                updateBoardUI();
             }
 
-            // Switch to AI's turn
+            // Check if the game is over
+            if (checkGameOver()) {
+                return;
+            }
+
+            // Switch turn
             switchPlayer();
             updateGameStatus();
 
@@ -252,41 +265,77 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Make a move on the board
-    function makeMove(row, col) {
+    function makeMove(row, col, player) {
         // Place the piece
-        board[row][col] = currentPlayer;
+        board[row][col] = player;
 
         // Flip opponent's pieces
-        const flippedPieces = getFlippedPieces(row, col, board, currentPlayer);
+        const flippedPieces = getFlippedPieces(row, col, board, player);
         flippedPieces.forEach(([r, c]) => {
-            board[r][c] = currentPlayer;
+            board[r][c] = player;
         });
 
-        // Update UI with animations
-        updateBoardWithAnimation(flippedPieces);
-
-        // Update the score
-        updateScoreUI();
-
-        // Check if the game is over
-        checkGameOver();
+        // Return flipped pieces for animation
+        return flippedPieces;
     }
 
     // Update board with flip animations
-    function updateBoardWithAnimation(flippedPieces) {
-        // First update all cells
-        updateBoardUI();
+    function updateBoardWithAnimation(newPieceRow, newPieceCol, flippedPieces, player) {
+        // First update the new piece
+        const newPieceCell = gameBoard.querySelector(`.cell[data-row="${newPieceRow}"][data-col="${newPieceCol}"]`);
+        newPieceCell.innerHTML = ''; // Clear any existing content
+        const newDisk = document.createElement('div');
+        newDisk.classList.add('cell-disk');
+        newDisk.classList.add(player === DARK ? 'dark' : 'light');
+        newPieceCell.appendChild(newDisk);
 
-        // Then add the flipping animation to flipped pieces
+        // Then animate the flipped pieces
         flippedPieces.forEach(([row, col]) => {
             const cell = gameBoard.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
-            const disk = cell.querySelector('.cell-disk');
-            if (disk) {
-                disk.classList.add('flipping');
+            const existingDisk = cell.querySelector('.cell-disk');
+
+            if (existingDisk) {
+                // Change the class to the new color
+                if (player === DARK) {
+                    existingDisk.classList.remove('light');
+                    existingDisk.classList.add('dark');
+                } else {
+                    existingDisk.classList.remove('dark');
+                    existingDisk.classList.add('light');
+                }
+
+                // Add flipping animation
+                existingDisk.classList.add('flipping');
+
                 // Remove the animation class after it completes
                 setTimeout(() => {
-                    disk.classList.remove('flipping');
+                    existingDisk.classList.remove('flipping');
                 }, 600);
+            }
+        });
+
+        // Update score
+        updateScoreUI();
+
+        // Update valid moves after a short delay to allow animations to complete
+        setTimeout(() => {
+            updateValidMoves();
+        }, 700);
+    }
+
+    // Update valid moves indicators
+    function updateValidMoves() {
+        const cells = gameBoard.querySelectorAll('.cell');
+        cells.forEach(cell => {
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+
+            // Remove valid move indicator
+            cell.classList.remove('valid-move');
+
+            // Add valid move indicators for current player
+            if (currentPlayer === playerColor && isValidMove(row, col, board, currentPlayer)) {
+                cell.classList.add('valid-move');
             }
         });
     }
@@ -499,6 +548,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => {
                     switchPlayer();
                     updateGameStatus();
+                    updateValidMoves();
                 }, 1500);
                 return;
             }
@@ -508,7 +558,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (bestMove) {
                 const [row, col] = bestMove;
-                makeMove(row, col);
+
+                // Make the move and get flipped pieces
+                const flippedPieces = makeMove(row, col, currentPlayer);
+
+                // Update the board with animations
+                updateBoardWithAnimation(row, col, flippedPieces, currentPlayer);
+
+                // Check if the game is over
+                if (checkGameOver()) {
+                    aiThinking = false;
+                    aiThinkingIndicator.style.display = 'none';
+                    return;
+                }
+
+                // Switch to player's turn
                 switchPlayer();
                 updateGameStatus();
             }

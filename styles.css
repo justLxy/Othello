@@ -218,7 +218,7 @@ main {
 }
 
 .cell:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.15);
 }
 
 .cell.valid-move::after {
@@ -227,7 +227,7 @@ main {
     width: 30%;
     height: 30%;
     border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.3);
+    background-color: rgba(255, 255, 255, 0.4);
     animation: pulse 1.5s infinite;
 }
 
@@ -236,6 +236,8 @@ main {
     height: 80%;
     border-radius: 50%;
     transition: transform var(--animation-speed), background-color var(--animation-speed);
+    backface-visibility: visible;
+    transform-style: preserve-3d;
 }
 
 .cell-disk.dark {
@@ -528,13 +530,16 @@ footer {
 
 @keyframes pulse {
     0% {
-        opacity: 0.6;
+        opacity: 0.4;
+        transform: scale(0.8);
     }
     50% {
-        opacity: 1;
+        opacity: 0.8;
+        transform: scale(1.2);
     }
     100% {
-        opacity: 0.6;
+        opacity: 0.4;
+        transform: scale(0.8);
     }
 }
 
